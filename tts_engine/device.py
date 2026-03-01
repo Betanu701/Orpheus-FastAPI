@@ -86,5 +86,5 @@ def is_gpu(device: str) -> bool:
 def supports_streams(device: str) -> bool:
     """Return True only for NVIDIA CUDA (not AMD ROCm)."""
     return device == "cuda" and not (
-        hasattr(torch.version, "hip") and torch.version.hip
+        hasattr(torch.version, "hip") and torch.version.hip is not None
     )
