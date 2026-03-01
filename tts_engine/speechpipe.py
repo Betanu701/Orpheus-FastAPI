@@ -8,6 +8,8 @@ import time
 import os
 import sys
 
+from tts_engine.device import get_device, supports_streams
+
 # Helper to detect if running in Uvicorn's reloader (same as in inference.py)
 def is_reloader_process():
     """Check if the current process is a uvicorn reloader"""
@@ -39,8 +41,8 @@ except:
 
 model = SNAC.from_pretrained("hubertsiuzdak/snac_24khz").eval()
 
-# Check if CUDA is available and set device accordingly
-snac_device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
+# Detect best available device via unified device module
+snac_device = get_device()
 if not IS_RELOADER:
     print(f"Using device: {snac_device}")
 model = model.to(snac_device)
@@ -50,12 +52,10 @@ model = model.to(snac_device)
 if not IS_RELOADER:
     print("Using standard PyTorch optimizations (torch.compile disabled)")
 
-# Prepare CUDA streams for parallel processing if available
-cuda_stream = None
-if snac_device == "cuda":
-    cuda_stream = torch.cuda.Stream()
-    if not IS_RELOADER:
-        print("Using CUDA stream for parallel processing")
+# Prepare CUDA streams for parallel processing if available (NVIDIA only)
+cuda_stream = torch.cuda.Stream() if supports_streams(snac_device) else None
+if cuda_stream is not None and not IS_RELOADER:
+    print("Using CUDA stream for parallel processing")
 
 
 def convert_to_audio(multiframe, count):
@@ -119,7 +119,7 @@ def convert_to_audio(multiframe, count):
         audio_slice = audio_hat[:, :, 2048:4096]
         
         # Process on GPU if possible, with minimal data transfer
-        if snac_device == "cuda":
+        if snac_device in ("cuda", "xpu"):
             # Scale directly on GPU
             audio_int16_tensor = (audio_slice * 32767).to(torch.int16)
             # Only transfer the final result to CPU

@@ -81,6 +81,16 @@ Listen to sample outputs with different voices and emotions:
 - **Dynamic Environment Variables**: Update API endpoint, timeouts, and model parameters without editing files
 - **Server Restart**: Apply configuration changes with one-click server restart
 
+## Supported Hardware
+
+| GPU Vendor | PyTorch Device | llama.cpp Backend | Docker Compose | Status |
+|---|---|---|---|---|
+| NVIDIA (CUDA) | `cuda` | `server-cuda` | `docker-compose-gpu.yml` | ✅ Full support |
+| AMD (ROCm) | `cuda` (via HIP) | `server-vulkan` | `docker-compose-gpu-rocm.yml` | ✅ Full support |
+| Intel Arc (XPU) | `xpu` | `server-intel` (SYCL) | `docker-compose-gpu-intel.yml` | ✅ Full support |
+| Apple Silicon | `mps` | CPU fallback | N/A (native install) | ⚠️ Basic support |
+| CPU only | `cpu` | CPU | `docker-compose-cpu.yaml` | ✅ Full support |
+
 ## Project Structure
 
 ```
@@ -104,14 +114,14 @@ Orpheus-FastAPI/
 ### Prerequisites
 
 - Python 3.8-3.11 (Python 3.12 is not supported due to removal of pkgutil.ImpImporter)
-- CUDA-compatible or ROCm-compatible GPU (recommended: RTX series for best performance)
+- CUDA-compatible, ROCm-compatible, or Intel Arc (XPU) GPU (recommended: RTX series for best performance)
 - Using docker compose or separate LLM inference server running the Orpheus model (e.g., LM Studio or llama.cpp server)
 - For Docker GPU Support, ensure you're using an Nvidia GPU on either Linux or Windows with CUDA 12.4 or greater and NVIDIA Container Toolkit installed
 
 ### 🐳 Docker compose
 
 The docker compose file orchestrates the Orpheus-FastAPI for audio and a llama.cpp inference server for the base model token generation. The GGUF model is downloaded with the model-init service.
-There are three versions, two for machines that have access to GPU support `docker-compose-gpu.yaml`, `docker-compose-gpu-rocm.yml`  and one for CPU support only: `docker-compose-cpu.yaml`
+There are four versions: three for machines that have access to GPU support (`docker-compose-gpu.yml`, `docker-compose-gpu-rocm.yml`, `docker-compose-gpu-intel.yml`) and one for CPU support only: `docker-compose-cpu.yaml`
 
 ```bash
 cp .env.example .env # Create your .env file from the example
@@ -134,6 +144,11 @@ docker compose -f docker-compose-gpu.yml up
 For ROCm GPU support run
 ```bash
 docker compose -f docker-compose-gpu-rocm.yml up
+```
+
+For Intel Arc GPU support run
+```bash
+docker compose -f docker-compose-gpu-intel.yml up
 ```
 
 For CPU support run:
@@ -170,6 +185,11 @@ or
 Install PyTorch with ROCm support:
 ```bash
 pip3 install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/rocm6.4/
+```
+or
+Install PyTorch with Intel XPU support:
+```bash
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/xpu
 ```
 
 4. Install other dependencies:

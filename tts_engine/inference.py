@@ -31,43 +31,36 @@ load_dotenv()
 # Detect hardware capabilities and display information
 import torch
 import psutil
+from tts_engine.device import get_device, get_device_info, is_gpu
 
 # Detect if we're on a high-end system based on hardware capabilities
-HIGH_END_GPU = False
-if torch.cuda.is_available():
-    # Get GPU properties
-    props = torch.cuda.get_device_properties(0)
-    gpu_name = props.name
-    gpu_mem_gb = props.total_memory / (1024**3)
-    compute_capability = f"{props.major}.{props.minor}"
-    
-    # Consider high-end if: large VRAM (≥16GB) OR high compute capability (≥8.0) OR large VRAM (≥12GB) with good CC (≥7.0)
-    HIGH_END_GPU = (gpu_mem_gb >= 16.0 or 
-                    props.major >= 8 or 
-                    (gpu_mem_gb >= 12.0 and props.major >= 7))
-        
-    if HIGH_END_GPU:
-        if not IS_RELOADER:
-            print(f"🖥️ Hardware: High-end CUDA GPU detected")
-            print(f"📊 Device: {gpu_name}")
-            print(f"📊 VRAM: {gpu_mem_gb:.2f} GB")
-            print(f"📊 Compute Capability: {compute_capability}")
+device = get_device()
+info = get_device_info(device)
+HIGH_END_GPU = info["is_high_end"]
+
+if is_gpu(device):
+    if not IS_RELOADER:
+        if HIGH_END_GPU:
+            print(f"🖥️ Hardware: High-end {info['vendor']} GPU detected")
+        else:
+            print(f"🖥️ Hardware: {info['vendor']} GPU detected")
+        print(f"📊 Device: {info['name']}")
+        if info['memory_gb'] > 0:
+            print(f"📊 VRAM: {info['memory_gb']:.2f} GB")
+        if 'compute_capability' in info:
+            print(f"📊 Compute Capability: {info['compute_capability']}")
+        if HIGH_END_GPU:
             print("🚀 Using high-performance optimizations")
-    else:
-        if not IS_RELOADER:
-            print(f"🖥️ Hardware: CUDA GPU detected")
-            print(f"📊 Device: {gpu_name}")
-            print(f"📊 VRAM: {gpu_mem_gb:.2f} GB")
-            print(f"📊 Compute Capability: {compute_capability}")
+        else:
             print("🚀 Using GPU-optimized settings")
 else:
-    # Get CPU info
+    # CPU detection block
     cpu_cores = psutil.cpu_count(logical=False)
     cpu_threads = psutil.cpu_count(logical=True)
     ram_gb = psutil.virtual_memory().total / (1024**3)
     
     if not IS_RELOADER:
-        print(f"🖥️ Hardware: CPU only (No CUDA GPU detected)")
+        print(f"🖥️ Hardware: CPU only (No GPU detected)")
         print(f"📊 CPU: {cpu_cores} cores, {cpu_threads} threads")
         print(f"📊 RAM: {ram_gb:.2f} GB")
         print("⚙️ Using CPU-optimized settings")
