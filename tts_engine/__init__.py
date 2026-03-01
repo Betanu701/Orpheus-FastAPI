@@ -15,3 +15,5 @@ from .inference import (
     AVAILABLE_LANGUAGES,
     list_available_voices
 )
+
+from .device import get_device, get_device_info, is_gpu, supports_streams
